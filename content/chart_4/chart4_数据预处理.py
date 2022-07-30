@@ -84,10 +84,164 @@
     4.7 利用sklearn进行数据预处理
             sklearn.preprocessing
         1_数据标准化、均值和方差缩放
-        2_特征缩放
+            -标准化至（均值为0，标准差为1）
+                preprocessing.scale(X_train)
+            -用训练集标准化的均值和标准差得到转换器，对测试集标准化
+                scaler = preprocessing.StandardScaler().fit(X_train)
+                scaler.transform(X_train)
+                scaler.transform(X_test)
+        2_特征缩放（也是标准化的一种方式）
+            (1)一般特征值缩放
+            - 特征缩放到指定区间（默认为0-1）
+                min_max_scaler = preprocessing.MinMaxScaler()
+                min_max_scaler.fit_transform(X_train)
+                X_test_minmax=min_max_scaler.transform(X_test)
+                    可指定缩放范围（min,max）：
+                        X_std = (X-X.min(axis=0))/(X.max(axis=0)-X.min(axis=0))
+                        X_scaled = X_std*(max-min)+min
+            - 特征缩放到(-1,1)，适合稀疏数据或已经零中心化的数据
+                max_Abs_scaler = preprocessing.MaxAbsScaler()
+                max_Abs_scaler.fit_transform(X_train)
+                max_Abs_scaler.transform(X_test)
+            (2)稀疏缩放数据
+                MaxAbsScaler和maxabsscale适合
+            (3)带异常值的缩放数据
+                robust_scale、RobustScaler
         3_非线性变换
+            (1)映射到均匀分布（数据映射到值为0-1的均匀分布,保证特征值的秩）
+                quantile_transformer = preprocessing.QuantileTransformer(random_state=0)
+                quantile_transformer.fit_transform(X_train)
+                quantile_transformer.transform(X_test)
+            (2)映射到高斯分布（将指定数据集从任意分布映射到尽可能接近高斯分布）
+                -Box-Cox变换用于严格的正数据
+                    pt = preproceessing.PowerTransform(method='box-cox',standardize=False)
+                    pt.fit_transform(X_train)
+                -QuantileTransformer实现
+                    quantile_transformer=QuantileTransformer(output_distribution='normal',random_state=0)
+                    ..
         4_正则化
-        5_编码分类特征
-        6_离散化
+            将单个样本缩放到单位范数(每个样本的范数为1)
+                preprocessing.normalize(X,norm='l2')
+
+        5_编码分类特征(类别特征转数值)
+            1)序数编码（类1、类2、类3 -> 1、2、3）
+                enc = preprocessing.OrdinalEncoder()
+                enc.fit(X)
+                enc.transform('列1值','列2值') -> 输出对应序数编码
+            2)One-hot编码或dummy编码
+                enc = preprocessing.OneHotEncoder()
+                enc.fit(X)
+                R=enc.transform(..).toarray()
+                display(R)
+        6_离散化（连续特征转离散）
+            1)K桶离散化（将特征离散到K个桶(bin)中）
+                est = preprocessing.KBinsDiscretizer(n_bins=[1桶数,..],encoding='ordinal').fit(X)
+                est.transform(x)
+            2)特征二值化（对数字特征进行阈值化后便于获得布尔值）
+                binarizer=preprocessing.Binarizer().fit(X)
+                Y1=binaizer.transform(X)
+                    可调整阈值(边界值)：.Binarizer(threshold=1.1)
 
 '''
+print('数据标准化')
+# 离散标准化数据
+def MinMaxScale(data):
+    data = (data-data.min())/(data.max()-data.min())
+    return data
+# 标准差标准化数据
+def StandardScale(data):
+    data = (data-data.mean())/data.std()
+    return data
+
+print('利用sklearn进行数据预处理')
+from sklearn import preprocessing
+import numpy as np
+
+print('数据的标准化、均值和标准差示例求解：scale、scaler')
+X_train = np.array([[1.,-2.,1.5],[2.2,1.3,0.5],[0.3,1.,-1.5]])
+X_scaled = preprocessing.scale(X_train)
+print('X_train:\n',X_train)
+print('X_scaled\n',X_scaled)
+print('均值',X_scaled.mean(axis=0))
+print('标准差',X_scaled.std(axis=0))
+
+print('程序类实现标准化：StandardScaler')
+scaler = preprocessing.StandardScaler().fit(X_train)
+print('scaler.scale_',scaler.scale_)
+print('scaler.mean_',scaler.mean_)
+scaler.transform(X_train)
+X_test = [[-1.,1.,0]]
+X_test_scale = scaler.transform(X_test)
+print('X_test_scale',X_test_scale)
+
+X_train = np.array([[1.,-1.,2.],[2.,0.,0.],[0.,1.,-1.]])
+print('一般特征值缩放：MinMaxScaler或MaxAbsScaler')
+min_max_scaler = preprocessing.MinMaxScaler()
+X_train_minmax = min_max_scaler.fit_transform(X_train)
+print('原始数据：\n',X_train)
+print('归一化：\n',X_train_minmax)
+X_test = np.array([[-3.,-1.,4.]])
+X_test_minmax = min_max_scaler.fit(X_test)
+print('测试数据：',X_test)
+print('归一化的测试数据：\n',X_test_minmax)
+print(' ',min_max_scaler.scale_)
+print(' ',min_max_scaler.min_)
+
+print('非线性变换-映射到0-1均匀分布：QuantileTransform')
+from sklearn.datasets import load_iris
+from sklearn.model_selection import train_test_split
+X,y = load_iris(return_X_y=True)
+X_train,X_test,y_train,y_test = train_test_split(X, y,random_state=0)
+quantile_transformer = preprocessing.QuantileTransformer(random_state=0)
+X_train_trans = quantile_transformer.fit_transform(X_train)
+X_test_trans = quantile_transformer.transform(X_test)
+print(np.percentile(X_train[:,0],[0,25,50,75,100]))
+print(np.percentile(X_train_trans[:,0],[0,25,50,75,100]))
+
+print('非线性变换-映射到高斯分布：PowerTransform')
+pt = preprocessing.PowerTransformer(method='box-cox',standardize=False)
+X_lognormal = np.random.RandomState(616).lognormal(size=(3,3))
+print(X_lognormal)
+T = pt.fit_transform(X_lognormal)
+print(T)
+
+print('非线性变换-映射到高斯分布：QuantileTransformer')
+X,y=load_iris(return_X_y=True)
+quantile_transformer = preprocessing.QuantileTransformer(
+    output_distribution='normal',random_state=0
+)
+X_trans = quantile_transformer.fit_transform(X)
+print(quantile_transformer.quantiles_)
+
+print('正则化：normalize')
+X = [[1.,-1.,2.],[2.,0.,0.],[0.,1.,-1.]]
+X_normalized = preprocessing.normalize(X,norm='l2')
+print(X_normalized)
+
+print('数据编码-序数编码')
+enc = preprocessing.OrdinalEncoder()
+X = [['male','from US','uses Safari'],['female','from Europe','uses Firefox']]
+enc.fit(X)
+print(enc.transform([['female','from Europe','uses Firefox']]))
+
+print('数据编码-one-hot编码')
+enc = preprocessing.OneHotEncoder()
+enc.fit(X)
+R=enc.transform(X).toarray()
+print(R)
+
+print('数据离散化-K桶离散化')
+X = np.array([[-3.,5.,15],[0.,6,14],[6.,3.,11]])
+est = preprocessing.KBinsDiscretizer(n_bins=[3,2,2],encode='ordinal').fit(X)
+X_est = est.transform(X)
+print(X_est)
+
+print('数据离散化-特征二值化')
+X = [[1.,-1.,2.],[2.,0.,0.],[0.,1.,-1.]]
+binarizer = preprocessing.Binarizer().fit(X)
+Y1 = binarizer.transform(X)
+print(Y1)
+binarizer = preprocessing.Binarizer(threshold=1.1)
+Y2 = binarizer.transform(X)
+print(Y2)
+
