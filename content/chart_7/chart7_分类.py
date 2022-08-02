@@ -129,10 +129,116 @@ from sklearn import tree
 from sklearn.tree import export_graphviz
 import graphviz
 
-iris = load_iris()
-clf = tree.DecisionTreeClassifier()
-clf = clf.fit(iris.data,iris.target)
-dot_file = 'tree.dot'
-tree.export_graphviz(clf,out_file=dot_file)
-with open('tree.dot','w') as f:
-    f = export_graphviz(clf,out_file=f,feature_names=['SL','SW','PL','PW'])
+def sample_1():
+    iris = load_iris()
+    clf = tree.DecisionTreeClassifier()
+    clf = clf.fit(iris.data, iris.target)
+    dot_file = 'tree.dot'
+    tree.export_graphviz(clf, out_file=dot_file)
+    with open('tree.dot', 'w') as f:
+        f = export_graphviz(clf, out_file=f, feature_names=['SL', 'SW', 'PL', 'PW'])
+
+import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.colors import ListedColormap
+from sklearn.neighbors import KNeighborsClassifier
+
+
+def sample_2():
+    print('利用KNN对Iris数据集分类')
+    iris = load_iris()
+    X = iris.data[:,:2]
+    Y = iris.target
+    print(iris.feature_names)
+    cmap_light = ListedColormap(['#FFAAAA','#AAFFAA','#AAAAFF'])
+    cmap_bold = ListedColormap(['#FF0000','#00FF00','#0000FF'])
+    clf = KNeighborsClassifier(n_neighbors=10,weights='uniform')
+    clf.fit(X,Y)
+    # 画出边界
+    x_min,x_max = X[:,0].min()-1,X[:,0].max()+1
+    y_min,y_max = X[:,1].min()-1,X[:,1].max()+1
+    xx,yy = np.meshgrid(np.arange(x_min,x_max,0.02),np.arange(y_min,y_max,0.02))
+    z = clf.predict(np.c_[xx.ravel(),yy.ravel()])
+    z.reshape(xx.shape)
+    plt.figure()
+    # plt.pcolormesh(xx,yy,z,cmap=cmap_light,)
+    plt.scatter(X[:,0],X[:,1],c=Y,cmap=cmap_bold)
+    plt.xlim(xx.min(),xx.max())
+    plt.ylim(yy.min(),yy.max())
+    plt.title('3_Class(k=10,weights=uniform)')
+    plt.show()
+
+from sklearn import svm
+from sklearn import model_selection
+from sklearn import metrics
+def sample_3():
+    print('利用SVM进行分类')
+    iris = load_iris()
+    x,y =iris.data,iris.target
+    x_train,x_test,y_train, y_test = model_selection.train_test_split(x,y,
+                                                                      random_state=1,test_size=0.2)
+    classifier = svm.SVC(kernel='linear',gamma=0.1,decision_function_shape='ovo',C=0.1)
+    classifier.fit(x_train,y_train.ravel())
+    print('SVM-输出训练集的准确率为：', classifier.score(x_train,y_train))
+    print('SVM-输出测试集的准确率为：', classifier.score(x_test,y_test))
+    y_hat = classifier.predict(x_test)
+    classreport = metrics.classification_report(y_test,y_hat)
+    print(classreport)
+
+from sklearn.naive_bayes import GaussianNB
+def sample_4():
+    iris = load_iris()
+    clf = GaussianNB()
+    clf.fit(iris.data,iris.target)
+    y_pred=clf.predict(iris.data)
+    print('Number of mislabeled points out of %d points:%d' %(iris.data.shape[0],(iris.target!=y_pred).sum()))
+
+from sklearn.metrics import precision_score, recall_score, f1_score, fbeta_score, roc_curve, auc
+
+
+def sample_5():
+    print('Python分类器评估示例')
+    iris = load_iris()
+    X = iris.data
+    y = iris.target
+    X,y = X[y!=2],y[y[y != 2]]
+    random_state = np.random.RandomState(0)
+    n_samples,n_features = X.shape
+    X=np.c_[X,random_state.randn(n_samples,200*n_features)]
+    X_train,X_test,y_train,y_test = model_selection.train_test_split(X,y,test_size=.3,random_state=0)
+    classifier = svm.SVC(kernel='linear',probability=True,random_state=random_state)
+    classifier.fit(X_train,y_train)
+    y_predict = classifier.predict(X_test)
+    print('SVM-输出训练集的准确率为：',classifier.score(X_train,y_train))
+    print('Precision：%.3f ' % precision_score(y_true=y_test,y_pred=y_predict))
+    print('Recall：%.3f' %recall_score(y_true=y_test,y_pred=y_predict))
+    print('F1: %.3f' % f1_score(y_true=y_test,y_pred=y_predict))
+    print('F_beta: %.3f' % fbeta_score(y_true=y_test,y_pred=y_predict,beta=0.8))
+    # 绘制ROC曲线
+    y_score = classifier.fit(X_train,y_train).decision_function(X_test)
+    fpr,tpr,threshold = roc_curve(y_test,y_score)
+    roc_auc = auc(fpr,tpr)
+    plt.rcParams['font.family']=['SimHei']
+    plt.figure()
+    plt.figure(figsize=(8,4))
+    plt.plot(fpr,tpr,color='darkorange',label='ROC curve(area= %0.2f)' % roc_auc)
+    plt.plot([0,1],[0,1],color='navy',linestyle='--')
+    plt.xlim([0.0,0.1])
+    plt.ylim([0.0,1.05])
+    plt.xlabel('False Positive Rate')
+    plt.xlabel('True Positive Rate')
+    plt.title('ROC曲线示例')
+    plt.legend(loc='lower right')
+    plt.show()
+
+from sklearn.model_selection import KFold
+def sample_6():
+    X = np.
+
+
+def main():
+    sample_6()
+
+
+if __name__ == '__main__':
+    main()
