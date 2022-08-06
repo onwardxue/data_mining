@@ -122,14 +122,20 @@
                     sklearn.tree.DecisionTreeClassifier
 
 '''
-print('利用决策树算法对Iris数据集构建决策树')
+import matplotlib
+
 from sklearn.datasets import load_iris
 import pandas as pd
 from sklearn import tree
 from sklearn.tree import export_graphviz
 import graphviz
 
+from sklearn.ensemble import AdaBoostClassifier, RandomForestClassifier
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.datasets import make_gaussian_quantiles
+
 def sample_1():
+    print('利用决策树算法对Iris数据集构建决策树')
     iris = load_iris()
     clf = tree.DecisionTreeClassifier()
     clf = clf.fit(iris.data, iris.target)
@@ -187,6 +193,7 @@ def sample_3():
 
 from sklearn.naive_bayes import GaussianNB
 def sample_4():
+    print('对pu shu')
     iris = load_iris()
     clf = GaussianNB()
     clf.fit(iris.data,iris.target)
@@ -201,14 +208,17 @@ def sample_5():
     iris = load_iris()
     X = iris.data
     y = iris.target
-    X,y = X[y!=2],y[y[y != 2]]
+    X,y = X[y!=2],y[y != 2]
     random_state = np.random.RandomState(0)
     n_samples,n_features = X.shape
     X=np.c_[X,random_state.randn(n_samples,200*n_features)]
     X_train,X_test,y_train,y_test = model_selection.train_test_split(X,y,test_size=.3,random_state=0)
+    # 训练模型
     classifier = svm.SVC(kernel='linear',probability=True,random_state=random_state)
     classifier.fit(X_train,y_train)
+    # 预测新数据
     y_predict = classifier.predict(X_test)
+    # 输出准确率、精度、回归、F1、F_beta
     print('SVM-输出训练集的准确率为：',classifier.score(X_train,y_train))
     print('Precision：%.3f ' % precision_score(y_true=y_test,y_pred=y_predict))
     print('Recall：%.3f' %recall_score(y_true=y_test,y_pred=y_predict))
@@ -216,29 +226,116 @@ def sample_5():
     print('F_beta: %.3f' % fbeta_score(y_true=y_test,y_pred=y_predict,beta=0.8))
     # 绘制ROC曲线
     y_score = classifier.fit(X_train,y_train).decision_function(X_test)
+    # 得到fp,tp
     fpr,tpr,threshold = roc_curve(y_test,y_score)
+    # 使用fp、tp计算roc值
     roc_auc = auc(fpr,tpr)
     plt.rcParams['font.family']=['SimHei']
-    plt.figure()
     plt.figure(figsize=(8,4))
+    # fp、tp绘图
     plt.plot(fpr,tpr,color='darkorange',label='ROC curve(area= %0.2f)' % roc_auc)
+    # 绘制对角线
     plt.plot([0,1],[0,1],color='navy',linestyle='--')
-    plt.xlim([0.0,0.1])
+    # 控制x轴、y轴范围
+    plt.xlim([0.0,1.0])
     plt.ylim([0.0,1.05])
+    # 设置x、y标签
     plt.xlabel('False Positive Rate')
-    plt.xlabel('True Positive Rate')
+    plt.ylabel('True Positive Rate')
+    # 设置图标题
     plt.title('ROC曲线示例')
+    # 设置标识在右下角
     plt.legend(loc='lower right')
+    # 显示图片
     plt.show()
 
-from sklearn.model_selection import KFold
+from sklearn.model_selection import train_test_split
+import numpy as np
+
 def sample_6():
-    X = np.
+    print('简单交叉验证示例')
+    X = np.array([[1,2],[3,4],[5,6],[7,8]])
+    y = np.array([1,2,2,1])
+    # 划分训练集、测试集（55分割）
+    x_train,x_test,y_train, y_test = train_test_split(X,y,test_size=0.50,random_state=5)
+    # 寻出集合数据
+    print('x_train：\n',x_train)
+    print('x_test：\n',x_test)
+    print('y_train：\n',y_train)
+    print('y_test：\n',y_test)
+
+from sklearn.model_selection import KFold
+def sample_7():
+    print('K折交叉验证')
+    X = np.array([[1, 2], [3, 4], [5, 6], [7, 8]])
+    y = np.array([1, 2, 2, 1])
+    # k折交叉检验:每次选择（每折）的训练集、测试集都不一样
+    kf = KFold(n_splits=2)
+    for train_index,test_index in kf.split(X):
+        print('Train:',train_index,'validation:',test_index)
+        X_train,X_test = X[train_index],X[test_index]
+        y_train,y_test = y[train_index],y[test_index]
+
+from sklearn.model_selection import LeaveOneOut
+def sample_8():
+    print('留一交叉验证')
+    X = np.array([[1, 2], [3, 4], [5, 6], [7, 8]])
+    y = np.array([1, 2, 2, 1])
+    # 留一交叉检验：验证n次，每次留1个用于测试集（n为数据集个数）
+    loo = LeaveOneOut()
+    loo.get_n_splits(X)
+    for train_index,test_index in loo.split(X):
+        print('train:',train_index,'validation:',test_index)
+
+
+def sample_9():
+    print('用基于决策树的Adaboost进行分类拟合')
+    # 生成样本数据并绘制散点图(生成两种二维正态分布)
+    X1,y1 = make_gaussian_quantiles(cov=2.0,n_samples=500,n_features=2,n_classes=2,random_state=1)
+    X2,y2 = make_gaussian_quantiles(mean=(3,3),cov=1.5,n_samples=400,n_features=2,n_classes=2,random_state=1)
+    # 两种数据合成为一组
+    X = np.concatenate((X1,X2))
+    y = np.concatenate((y1,-y2+1))
+    plt.scatter(X[:,0],X[:,1],marker='o',c=y)
+    plt.show()
+    # 使用adaboost分类
+    bdt = AdaBoostClassifier(DecisionTreeClassifier(max_depth=2,min_samples_split=20,min_samples_leaf=5),algorithm='SAMME',
+                             n_estimators=200,learning_rate=0.8)
+    bdt.fit(X,y)
+    # 设置边界
+    x_min,x_max = X[:,0].min()-1,X[:,0].max()+1
+    y_min,y_max = X[:,1].min()-1,X[:,1].max()+1
+    # 绘制预测边界
+    xx,yy = np.meshgrid(np.arange(x_min,x_max,0.02),np.arange(y_min,y_max,0.02))
+    Z = bdt.predict(np.c_[xx.ravel(),yy.ravel()])
+    Z = Z.reshape(xx.shape)
+    cs = plt.contourf(xx,yy,Z,cmap=plt.cm.Paired)
+    plt.scatter(X[:,0],X[:,1],marker='o',c=y)
+    plt.show()
+    print('Score:',bdt.score(X,y))
+
+from sklearn.datasets import load_wine
+
+def sample_10():
+    print('随机森林实现分类')
+    wine = load_wine()
+    X_train,X_test, y_train, y_test=model_selection.train_test_split(wine.data,wine.target,test_size=0.3)
+    clf = DecisionTreeClassifier(random_state=0)
+    rfc = RandomForestClassifier(random_state=0)
+    # 分别构建决策树和随机森林并进行训练
+    clf = clf.fit(X_train, y_train)
+    rfc = rfc.fit(X_train,y_train)
+    # 显示决策树和随机森林的准确率
+    score_c = clf.score(X_test,y_test)
+    score_r = rfc.score(X_test,y_test)
+    print('Single Tree:{} \n'.format(score_c),'RandomForest:{} \n'.format(score_r))
 
 
 def main():
-    sample_6()
-
+    i=5
+    while(i):
+        sample_10()
+        i-=1
 
 if __name__ == '__main__':
     main()
